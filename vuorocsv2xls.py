@@ -28,7 +28,7 @@ bf.set_bold()
 
 ws = wb.add_worksheet()
 
-with open(fname,'rb') as f:
+with open(loadfn,'rb') as f:
     csvf = unicodecsv.reader(f, delimiter=';', quotechar='"',encoding='utf-8-sig')
     header = False
     r = 0
