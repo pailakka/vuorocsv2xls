@@ -2,22 +2,30 @@ import xlsxwriter
 import sys
 import unicodecsv
 import os
-import wget
+import urllib2
 import time
+import datetime
 output_dir = os.environ.get('VUORO2XLS_OUTPUT','.')
+TMP_PATH = os.environ.get('VUORO2XLS_TMP','.')
+
+
 url = 'https://koontikartta.navici.com/tiedostot/vuoro.csv'
 if len(sys.argv) == 2:
     url = sys.argv[1]
-
-fname = 'vuoro.csv'
-
-loadfn = os.path.join(output_dir,fname)
 outfn = os.path.join(output_dir,'vuoro.xlsx')
-print 'loading',loadfn
-if os.path.exists(loadfn):
-    os.unlink(loadfn)
-wget.download(url,loadfn)
-print
+fname = 'vuoro.csv'
+loadfn = os.path.join(TMP_PATH,fname)
+
+if not os.path.exists(loadfn):
+    print 'loading',loadfn
+    if os.path.exists(loadfn):
+        os.unlink(loadfn)
+    r = urllib2.urlopen(url)
+    f = open(loadfn,'wb')
+    f.write(r.read())
+    f.close()
+    r.close()
+    print 'done!'
 
 
 st = time.time()
@@ -27,7 +35,7 @@ bf = wb.add_format()
 bf.set_bold()
 
 ws = wb.add_worksheet()
-
+date_format = workbook.add_format({'num_format': 'yyyy-mm-dd hh:mm:ss'})
 with open(loadfn,'rb') as f:
     csvf = unicodecsv.reader(f, delimiter=';', quotechar='"',encoding='utf-8-sig')
     header = False
@@ -39,6 +47,9 @@ with open(loadfn,'rb') as f:
         for c,d in enumerate(l):
             if r == 0:
                 ws.write(r,c,d.replace('"',''),bf)
+            elif header[c].endswith('pvm') and r > 0 and len(d) > 12:
+                dt = datetime.datetime.strptime(d,'%d.%m.%Y %H:%M:%S')
+                ws.write_datetime(r, c, dt,date_format )
             else:
                 ws.write(r,c,d)
 
